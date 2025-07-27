@@ -4,7 +4,7 @@ const User = require('../user/User');
 const Course = require('../course/Course');
 
 const Enrollment = sequelize.define('Enrollment', {
-    id: { type: DataTypes.INT, autoIncrement: true, primaryKey: true },
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
 });
 
 Enrollment.belongsTo(User, { foreignKey: 'userId' });

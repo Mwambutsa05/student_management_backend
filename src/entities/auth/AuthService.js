@@ -14,8 +14,12 @@ class AuthService {
 
     async login(data) {
         const user = await authRepository.findByEmail(data.email);
-        if (!user || !(await bcrypt.compare(data.password, user.password))) {
-            throw new Error('Invalid credentials');
+        if (!user) {
+            throw new Error('User not found');
+        }
+        const isMatch = await bcrypt.compare(data.password, user.password);
+        if (!isMatch) {
+            throw new Error('Invalid password');
         }
         const token = generateToken({ id: user.id, email: user.email });
         return new LoginDTO(user, token);

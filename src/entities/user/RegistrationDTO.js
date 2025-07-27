@@ -1,13 +1,11 @@
 class RegistrationDTO {
-    constructor({ fullName, email, username, phoneNumber, dateOfBirth, status, password, confirmPassword }) {
+    constructor({ fullName, email, password, username, phoneNumber, dateOfBirth }) {
         this.fullName = fullName;
         this.email = email;
-        this.username = username || null;
+        this.password = password;
+        this.username = username;
         this.phoneNumber = phoneNumber;
         this.dateOfBirth = dateOfBirth;
-        this.status = status || 'pending';
-        this.password = password;
-        this.confirmPassword = confirmPassword;
     }
 }
 module.exports = RegistrationDTO;

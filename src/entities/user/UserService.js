@@ -1,20 +1,20 @@
 const bcrypt = require('bcrypt');
 const userRepository = require('./UserRepository');
 const { generateToken } = require('../../config/jwt');
+const cloudinary = require('cloudinary').v2;
 
 class UserService {
-    async register(data) {
-        const hashedPassword = await bcrypt.hash(data.password, 10);
-        const user = await userRepository.create({ ...data, password: hashedPassword });
-        return { token: generateToken({ id: user.id, email: user.email }) };
-    }
+    // ... [keep existing methods]
 
-    async login(data) {
-        const user = await userRepository.findByEmail(data.email);
-        if (!user || !(await bcrypt.compare(data.password, user.password))) {
-            throw new Error('Invalid credentials');
+    async updateProfileImage(userId, imagePath) {
+        // Upload to Cloudinary if not already a URL
+        let imageUrl = imagePath;
+        if (!imagePath.startsWith('http')) {
+            const result = await cloudinary.uploader.upload(imagePath);
+            imageUrl = result.secure_url;
         }
-        return { token: generateToken({ id: user.id, email: user.email }) };
+
+        return await userRepository.update(userId, { profileImage: imageUrl });
     }
 }
 

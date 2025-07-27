@@ -1,6 +1,6 @@
 class LoginDTO {
-    constructor({ identifier, password }) {
-        this.identifier = identifier; // email or username
+    constructor({ email, password }) {
+        this.email = email;
         this.password = password;
     }
 }
