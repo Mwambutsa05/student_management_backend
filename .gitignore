@@ -1,0 +1,35 @@
+# Node modules
+node_modules/
+
+# Environment variables (do not expose secrets)
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Temporary upload files (before Cloudinary)
+uploads/
+
+# Build outputs (if you later add TypeScript or bundlers)
+dist/
+build/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.iml
+
+# Coverage reports (if using testing)
+coverage/
+
+# Docker-related (if you use Docker)
+*.pid
+*.seed
