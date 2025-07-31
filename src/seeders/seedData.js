@@ -1,6 +1,6 @@
 const { sequelize } = require('../config/database');
 const User = require('../entities/user/User');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 module.exports = async () => {
     try {

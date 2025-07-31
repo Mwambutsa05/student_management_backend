@@ -43,7 +43,7 @@ function verifyToken(token) {
         console.log('✅ Token verified for user:', decoded.id);
         return decoded;
     } catch (error) {
-        console.error('❌ Token verification failed:', error.message);
+        console.error(' Token verification failed:', error.message);
         throw new Error('Invalid or expired token');
     }
 }

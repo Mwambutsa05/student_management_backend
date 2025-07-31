@@ -12,15 +12,41 @@ cloudinary.config({
 });
 
 // Routes
-const userRoutes = require('../entities/user/userRoutes');
-const courseRoutes = require('../entities/course/courseRoutes');
-const enrollmentRoutes = require('../entities/enrollment/enrollmentRoutes');
-const authRoutes = require('../entities/auth/authRoutes');
+console.log('🔄 Loading routes...');
 
-router.use('/users', userRoutes);
-router.use('/courses', courseRoutes);
-router.use('/enrollments', enrollmentRoutes);
-router.use('/auth', authRoutes);
+try {
+    const userRoutes = require('../entities/user/userRoutes');
+    console.log('✅ User routes loaded');
+    router.use('/users', userRoutes);
+} catch (error) {
+    console.error('❌ Error loading user routes:', error.message);
+}
+
+try {
+    const courseRoutes = require('../entities/course/courseRoutes');
+    console.log('✅ Course routes loaded');
+    router.use('/courses', courseRoutes);
+} catch (error) {
+    console.error('❌ Error loading course routes:', error.message);
+}
+
+try {
+    const enrollmentRoutes = require('../entities/enrollment/enrollmentRoutes');
+    console.log('✅ Enrollment routes loaded');
+    router.use('/enrollments', enrollmentRoutes);
+} catch (error) {
+    console.error('❌ Error loading enrollment routes:', error.message);
+}
+
+try {
+    const authRoutes = require('../entities/auth/authRoutes');
+    console.log('✅ Auth routes loaded');
+    router.use('/auth', authRoutes);
+} catch (error) {
+    console.error('❌ Error loading auth routes:', error.message);
+}
+
+console.log('✅ All routes loaded successfully');
 
 // Test cloudinary
 (async () => {

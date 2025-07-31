@@ -1,4 +1,5 @@
 // ==================== IMPORT DEPENDENCIES ====================
+console.log('Starting server from index.js');
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
@@ -56,7 +57,7 @@ server.use(express.urlencoded({
 const initializeDatabase = async () => {
     try {
         await sequelize.authenticate();
-        console.log(' Database connection established');
+        console.log('✅ Database connection established');
 
         const syncOptions = {
             alter: process.env.NODE_ENV !== 'production',
@@ -65,23 +66,25 @@ const initializeDatabase = async () => {
         };
 
         await sequelize.sync(syncOptions);
-        console.log('🔄 Database models synchronized');
+        console.log(' Database models synchronized');
 
         await seedData();
-        console.log('🌱 Database seeding completed');
+        console.log('Database seeding completed');
     } catch (err) {
-        console.error(' Database initialization failed:', err);
+        console.error('Database initialization failed:', err);
         process.exit(1);
     }
 };
 
-// ==================== ROUTES ====================
+
+console.log('🔄 Loading API routes...');
 const apiRoutes = require('./src/app');
 server.use('/api', apiRoutes);
+console.log('✅ API routes loaded');
 
 // ======= SWAGGER SETUP START =======
-const setupSwagger = require('./src/config/swagger');
-setupSwagger(server);
+const swaggerDocs = require('./src/config/swaggerConfig');
+swaggerDocs(server);
 // ======= SWAGGER SETUP END =======
 
 // ==================== HEALTH CHECKS ====================
@@ -119,10 +122,11 @@ const startServer = async () => {
     await initializeDatabase();
 
     server.listen(PORT, () => {
-        console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
-        console.log(` http://localhost:${PORT}`);
-        console.log(` API Base: /api/v1`);
-        console.log(` Swagger docs available at http://localhost:${PORT}/api-docs`);
+        console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode`);
+        console.log(`📍 http://localhost:${PORT}`);
+        console.log(`🔗 API Base: /api`);
+        console.log(`📚 Swagger docs available at http://localhost:${PORT}/api-docs`);
+        console.log(`👑 Default Admin: mwambutsadaryce@gmail.com / Ineza2005`);
     });
 };
 

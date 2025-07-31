@@ -7,15 +7,14 @@ const userController = require('./UserController');
 const {
     registerSchema,
     loginSchema,
-    updateProfileSchema,
-    updateStatusSchema
+    updateProfileSchema
 } = require('../../validators/userValidators');
 
 /**
  * @swagger
  * tags:
  *   name: Users
- *   description: User management and authentication
+ *   description: User authentication and profile management
  */
 
 /**
@@ -33,6 +32,10 @@ const {
  *     responses:
  *       201:
  *         description: User registered successfully
+ *       409:
+ *         description: User already exists
+ *       400:
+ *         description: Missing required fields
  */
 router.post('/register', validate(registerSchema), userController.register);
 
@@ -51,8 +54,28 @@ router.post('/register', validate(registerSchema), userController.register);
  *     responses:
  *       200:
  *         description: Login successful
+ *       401:
+ *         description: Invalid credentials
+ *       400:
+ *         description: Missing required fields
  */
 router.post('/login', validate(loginSchema), userController.login);
+
+/**
+ * @swagger
+ * /users/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/logout', auth(['user']), userController.logout);
 
 /**
  * @swagger
@@ -65,8 +88,12 @@ router.post('/login', validate(loginSchema), userController.login);
  *     responses:
  *       200:
  *         description: Profile details
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
  */
-router.get('/me', auth(), userController.getProfile);
+router.get('/me', auth(['user']), userController.getProfile);
 
 /**
  * @swagger
@@ -85,8 +112,12 @@ router.get('/me', auth(), userController.getProfile);
  *     responses:
  *       200:
  *         description: Profile updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
  */
-router.put('/me', auth(), validate(updateProfileSchema), userController.updateProfile);
+router.put('/me', auth(['user']), validate(updateProfileSchema), userController.updateProfile);
 
 /**
  * @swagger
@@ -109,107 +140,11 @@ router.put('/me', auth(), validate(updateProfileSchema), userController.updatePr
  *     responses:
  *       200:
  *         description: Avatar updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
  */
-router.patch('/me/avatar', auth(), upload.single('avatar'), userController.updateProfileImage);
-
-/**
- * @swagger
- * /users:
- *   get:
- *     summary: Get all users (Admin only)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of users
- */
-router.get('/', auth(['admin']), userController.getAllUsers);
-
-/**
- * @swagger
- * /users/{id}:
- *   get:
- *     summary: Get user by ID
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: User details
- */
-router.get('/:id', auth(['admin']), userController.getUserById);
-
-/**
- * @swagger
- * /users/{id}/status:
- *   patch:
- *     summary: Update user status
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UserStatusUpdate'
- *     responses:
- *       200:
- *         description: Status updated
- */
-router.patch('/:id/status', auth(['admin']), validate(updateStatusSchema), userController.updateUserStatus);
-
-/**
- * @swagger
- * /users/{id}:
- *   delete:
- *     summary: Delete user
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: User deleted
- */
-router.delete('/:id', auth(['admin']), userController.deleteUser);
-
-/**
- * @swagger
- * /users/admin/create:
- *   post:
- *     summary: Create user by admin
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UserRegister'
- *     responses:
- *       201:
- *         description: User created
- */
-router.post('/admin/create', auth(['admin']), validate(registerSchema), userController.createUserByAdmin);
+router.patch('/me/avatar', auth(['user']), upload.single('avatar'), userController.updateProfileImage);
 
 module.exports = router;

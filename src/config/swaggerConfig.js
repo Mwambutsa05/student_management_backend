@@ -31,7 +31,7 @@ const options = {
         info: {
             title: 'Student Management API',
             version: '1.0.0',
-            description: 'API documentation for Student Management System',
+            description: 'API documentation for Student Management System with Admin and User authentication',
         },
         servers: [
             {
@@ -44,6 +44,7 @@ const options = {
                     type: 'http',
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
+                    description: 'Enter your JWT token in the format: Bearer <token>'
                 },
             },
             schemas: {
@@ -74,15 +75,47 @@ const options = {
                         dateOfBirth: { type: 'string', format: 'date', example: '2001-01-01' },
                     },
                 },
-                UserStatusUpdate: {
+                AdminLogin: {
                     type: 'object',
-                    required: ['status'],
+                    required: ['email', 'password'],
                     properties: {
-                        status: {
-                            type: 'string',
-                            enum: ['active', 'pending', 'blocked'],
-                            example: 'active',
+                        email: { type: 'string', example: 'mwambutsadaryce@gmail.com' },
+                        password: { type: 'string', example: 'Ineza2005' },
+                    },
+                },
+                AdminRegister: {
+                    type: 'object',
+                    required: ['fullName', 'email', 'password'],
+                    properties: {
+                        fullName: { type: 'string', example: 'John Admin' },
+                        email: { type: 'string', example: 'admin@example.com' },
+                        password: { type: 'string', example: 'adminpassword123' },
+                        phoneNumber: { type: 'string', example: '+250788123456' },
+                    },
+                },
+                AdminResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: {
+                            type: 'object',
+                            properties: {
+                                user: {
+                                    type: 'object',
+                                    properties: {
+                                        id: { type: 'string', example: '1' },
+                                        email: { type: 'string', example: 'admin@example.com' },
+                                        role: { type: 'string', example: 'admin' },
+                                        fullName: { type: 'string', example: 'John Admin' },
+                                    },
+                                },
+                                token: {
+                                    type: 'string',
+                                    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                                },
+                            },
                         },
+                        message: { type: 'string' },
                     },
                 },
                 Course: {
@@ -106,23 +139,31 @@ const options = {
                 AuthResponse: {
                     type: 'object',
                     properties: {
-                        user: {
+                        success: { type: 'boolean' },
+                        data: {
                             type: 'object',
                             properties: {
-                                id: { type: 'string', example: '1' },
-                                fullName: { type: 'string', example: 'John Doe' },
-                                email: { type: 'string', example: 'john@example.com' },
+                                user: {
+                                    type: 'object',
+                                    properties: {
+                                        id: { type: 'string', example: '1' },
+                                        fullName: { type: 'string', example: 'John Doe' },
+                                        email: { type: 'string', example: 'john@example.com' },
+                                        role: { type: 'string', example: 'user' },
+                                    },
+                                },
+                                token: {
+                                    type: 'string',
+                                    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                                },
                             },
                         },
-                        token: {
-                            type: 'string',
-                            example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-                        },
+                        message: { type: 'string' },
                     },
                 },
             },
         },
-        security: [{ bearerAuth: [] }],
+        // Removed global security - only apply to specific routes that need it
     },
     // Use only files that actually exist
     apis: existingFiles.length > 0 ? existingFiles : [
@@ -166,13 +207,16 @@ function swaggerDocs(app) {
                 background-color: #3ba372; 
                 border-color: #3ba372; 
             }
+            .swagger-ui .info .title { color: #2c3e50; }
+            .swagger-ui .info .description { color: #34495e; }
         `,
-        customSiteTitle: "Student Management API - Authorization Enabled"
+        customSiteTitle: "Student Management API - Admin & User Authentication"
     };
 
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerOptions));
     console.log(`📚 Swagger docs available at http://localhost:${PORT}/api-docs`);
     console.log(`🔐 Click the "Authorize" button in Swagger to add your JWT token`);
+    console.log(`👑 Default Admin: ${swaggerSpec.components?.schemas?.AdminLogin?.properties?.email?.example} / ${swaggerSpec.components?.schemas?.AdminLogin?.properties?.password?.example}`);
 }
 
 module.exports = swaggerDocs;

@@ -1,42 +1,145 @@
 const userRepository = require('./UserRepository');
 const RegistrationResponseDTO = require('./RegistrationResponseDTO');
 const LoginResponseDTO = require('./LoginResponseDTO');
-const ProfileDTO = require('./Upload'); // Note: This should probably be a ProfileDTO file, not Upload
+const ProfileDTO = require('./ProfileDTO'); // Fixed import
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('../../config/env');
 
 class UserController {
-    // ==================== PUBLIC ROUTES ====================
+    // ==================== PUBLIC USER ROUTES ====================
 
     async register(req, res, next) {
         try {
-            const user = await userRepository.create(req.body);
+            console.log('👤 User registration request received:', { email: req.body.email });
+
+            const { fullName, email, password, phoneNumber, dateOfBirth } = req.body;
+
+            if (!fullName || !email || !password) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Full name, email, and password are required'
+                });
+            }
+
+            // Prevent registration of admin email
+            if (email === 'mwambutsadaryce@gmail.com') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Cannot register as admin. Admin is already set.'
+                });
+            }
+
+            // Check if user already exists
+            const existingUser = await userRepository.findByEmail(email);
+            if (existingUser) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'User with this email already exists'
+                });
+            }
+
+            // Hash password before saving
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Create user with role 'user' by default
+            const userData = {
+                full_name: fullName,
+                email,
+                password: hashedPassword,
+                phoneNumber,
+                dateOfBirth,
+                role: 'user',
+                status: 'active'
+            };
+
+            const user = await userRepository.create(userData);
+
+            console.log('✅ User registration successful:', email);
+
             res.status(201).json({
                 success: true,
                 data: new RegistrationResponseDTO(user),
                 message: 'User registered successfully'
             });
         } catch (error) {
+            console.error('❌ User registration error:', error.message);
             next(error);
         }
     }
 
     async login(req, res, next) {
         try {
-            const { email, password } = req.body;
-            const result = await userRepository.authenticate(email, password);
+            console.log('👤 User login request received:', { email: req.body.email });
 
-            if (!result) {
-                return res.status(401).json({
+            const { email, password } = req.body;
+
+            if (!email || !password) {
+                return res.status(400).json({
                     success: false,
-                    message: 'Invalid credentials'
+                    message: 'Email and password are required'
                 });
             }
 
+            // Only allow login for non-admin users here
+            if (email === 'mwambutsadaryce@gmail.com') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Admin must login via /auth/admin/login'
+                });
+            }
+
+            // Find user by email
+            const user = await userRepository.findByEmail(email);
+            
+            if (!user) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid email or password'
+                });
+            }
+
+            // Verify password
+            const isValidPassword = await bcrypt.compare(password, user.password);
+            
+            if (!isValidPassword) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid email or password'
+                });
+            }
+
+            // Check if user is active
+            if (user.status !== 'active') {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Account is not active'
+                });
+            }
+
+            // Create user token
+            const userPayload = {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                fullName: user.full_name
+            };
+
+            const token = jwt.sign(userPayload, JWT_SECRET, {
+                expiresIn: '1d',
+                issuer: 'student-management-api',
+                audience: 'student-management-client'
+            });
+
+            console.log('✅ User login successful:', email);
+
             res.status(200).json({
                 success: true,
-                data: new LoginResponseDTO(result.user, result.token),
+                data: new LoginResponseDTO(user, token),
                 message: 'Login successful'
             });
         } catch (error) {
+            console.error('❌ User login error:', error.message);
             next(error);
         }
     }
@@ -45,6 +148,8 @@ class UserController {
 
     async getProfile(req, res, next) {
         try {
+            console.log('👤 Get user profile request for user:', req.user?.id);
+
             const user = await userRepository.findById(req.user.id);
             if (!user) {
                 return res.status(404).json({
@@ -58,12 +163,15 @@ class UserController {
                 data: new ProfileDTO(user)
             });
         } catch (error) {
+            console.error('❌ Get user profile error:', error.message);
             next(error);
         }
     }
 
     async updateProfile(req, res, next) {
         try {
+            console.log('👤 Update user profile request for user:', req.user?.id);
+
             const user = await userRepository.update(
                 req.user.id,
                 req.body,
@@ -83,12 +191,15 @@ class UserController {
                 message: 'Profile updated successfully'
             });
         } catch (error) {
+            console.error('❌ Update user profile error:', error.message);
             next(error);
         }
     }
 
     async updateProfileImage(req, res, next) {
         try {
+            console.log('👤 Update user profile image request for user:', req.user?.id);
+
             if (!req.file) {
                 return res.status(400).json({
                     success: false,
@@ -114,114 +225,25 @@ class UserController {
                 message: 'Profile image updated successfully'
             });
         } catch (error) {
+            console.error('❌ Update user profile image error:', error.message);
             next(error);
         }
     }
 
-    // ==================== ADMIN-ONLY ROUTES ====================
-
-    async getAllUsers(req, res, next) {
+    async logout(req, res) {
         try {
-            const users = await userRepository.findAll();
-            res.status(200).json({
-                success: true,
-                data: users.map(user => new ProfileDTO(user)),
-                count: users.length
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async getUserById(req, res, next) {
-        try {
-            const { id } = req.params;
-            const user = await userRepository.findById(id);
-
-            if (!user) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-            }
+            console.log('👋 User logged out:', req.user?.id);
 
             res.status(200).json({
                 success: true,
-                data: new ProfileDTO(user)
+                message: 'Logged out successfully'
             });
         } catch (error) {
-            next(error);
-        }
-    }
-
-    async updateUserStatus(req, res, next) {
-        try {
-            const { id } = req.params;
-            const { status } = req.body;
-
-            const user = await userRepository.updateStatus(
-                id,
-                status,
-                req.user.role
-            );
-
-            if (!user) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-            }
-
-            res.status(200).json({
-                success: true,
-                data: new ProfileDTO(user),
-                message: 'User status updated successfully'
+            console.error('❌ User logout error:', error.message);
+            res.status(500).json({
+                success: false,
+                message: 'Logout failed'
             });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async deleteUser(req, res, next) {
-        try {
-            const { id } = req.params;
-            const deleted = await userRepository.delete(id, req.user.role);
-
-            if (!deleted) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                });
-            }
-
-            res.status(200).json({
-                success: true,
-                message: 'User deleted successfully'
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    // ==================== SPECIAL ADMIN ROUTES ====================
-
-    async createUserByAdmin(req, res, next) {
-        try {
-            // Admin can create users with specific roles
-            const userData = {
-                ...req.body,
-                createdBy: req.user.id
-            };
-
-            const user = await userRepository.createByAdmin(userData);
-
-            res.status(201).json({
-                success: true,
-                data: new RegistrationResponseDTO(user),
-                message: 'User created successfully by admin'
-            });
-        } catch (error) {
-            next(error);
         }
     }
 }

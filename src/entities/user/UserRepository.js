@@ -1,5 +1,5 @@
 const User = require('./User');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 class UserRepository {
     async create(userData) {
