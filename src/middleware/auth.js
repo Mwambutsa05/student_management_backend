@@ -1,52 +1,52 @@
-const jwt = require('jsonwebtoken');
+const { verifyToken, extractTokenFromHeader } = require('../config/jwt');
 const userRepository = require('../entities/user/UserRepository');
 
-const auth = (requiredRoles = []) => {
+
+function auth(allowedRoles = []) {
     return async (req, res, next) => {
         try {
-            // Get token from Authorization header
-            const authHeader = req.headers.authorization;
+            console.log(' Auth middleware triggered for:', req.method, req.path);
 
-            if (!authHeader) {
+            // Extract token from Authorization header
+            const authHeader = req.headers.authorization;
+            const token = extractTokenFromHeader(authHeader);
+
+            if (!token) {
+                console.log('No token provided');
                 return res.status(401).json({
                     success: false,
                     message: 'Access denied. No token provided.'
                 });
             }
 
-            const token = authHeader.split(' ')[1]; // Bearer TOKEN
-
-            if (!token) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Access denied. Invalid token format.'
-                });
-            }
-
             // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const decoded = verifyToken(token);
+            console.log(' Token verified for user:', decoded.id);
 
-            // Get user from database
+            // Optional: Fetch fresh user data from database
             const user = await userRepository.findById(decoded.id);
-
             if (!user) {
+                console.log('User not found in database:', decoded.id);
                 return res.status(401).json({
                     success: false,
-                    message: 'Access denied. User not found.'
+                    message: 'Invalid token. User not found.'
                 });
             }
 
             // Check if user is active
-            if (user.status !== 'active') {
-                return res.status(401).json({
+            if (user.status === 'blocked') {
+                console.log(' User is blocked:', user.id);
+                return res.status(403).json({
                     success: false,
-                    message: 'Access denied. Account is not active.'
+                    message: 'Account is blocked. Please contact administrator.'
                 });
             }
 
-            // Check role-based access if roles are specified
-            if (requiredRoles.length > 0) {
-                if (!requiredRoles.includes(user.role)) {
+            // Check role-based access
+            if (allowedRoles.length > 0) {
+                const userRole = user.role || 'student';
+                if (!allowedRoles.includes(userRole)) {
+                    console.log('Insufficient permissions. Required:', allowedRoles, 'Has:', userRole);
                     return res.status(403).json({
                         success: false,
                         message: 'Access denied. Insufficient permissions.'
@@ -54,36 +54,68 @@ const auth = (requiredRoles = []) => {
                 }
             }
 
-            // Add user to request object
+
             req.user = {
                 id: user.id,
                 email: user.email,
-                role: user.role,
+                fullName: user.fullName,
+                role: user.role || 'student',
                 status: user.status
             };
 
+            console.log(' Auth successful for user:', req.user.id, 'Role:', req.user.role);
             next();
-        } catch (error) {
-            if (error.name === 'JsonWebTokenError') {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Access denied. Invalid token.'
-                });
-            }
 
-            if (error.name === 'TokenExpiredError') {
+        } catch (error) {
+            console.error(' Auth middleware error:', error.message);
+
+            if (error.message.includes('Invalid or expired token') ||
+                error.name === 'JsonWebTokenError' ||
+                error.name === 'TokenExpiredError') {
                 return res.status(401).json({
                     success: false,
-                    message: 'Access denied. Token expired.'
+                    message: 'Invalid or expired token'
                 });
             }
 
             return res.status(500).json({
                 success: false,
-                message: 'Internal server error during authentication.'
+                message: 'Authentication error'
             });
         }
     };
-};
+}
+
+// Optional: Middleware for optional authentication (user can be logged in or not)
+function optionalAuth() {
+    return async (req, res, next) => {
+        try {
+            const authHeader = req.headers.authorization;
+            const token = extractTokenFromHeader(authHeader);
+
+            if (token) {
+                const decoded = verifyToken(token);
+                const user = await userRepository.findById(decoded.id);
+
+                if (user && user.status !== 'blocked') {
+                    req.user = {
+                        id: user.id,
+                        email: user.email,
+                        fullName: user.fullName,
+                        role: user.role || 'student',
+                        status: user.status
+                    };
+                }
+            }
+
+            next();
+        } catch (error) {
+            // For optional auth, we don't return errors, just continue without user
+            console.log('⚠ Optional auth failed:', error.message);
+            next();
+        }
+    };
+}
 
 module.exports = auth;
+module.exports.optionalAuth = optionalAuth;
