@@ -50,14 +50,14 @@ npm start
 ```
 
 ### 2. Access Swagger Documentation
-- Visit: `http://localhost:5000/api-docs`
+- Visit: `http://localhost:5001/api-docs`
 - Click "Authorize" button to add JWT token
 - Test endpoints directly from Swagger UI
 
 ### 3. Admin Authentication
 ```bash
 # Login with default admin
-curl -X POST http://localhost:5000/api/auth/admin/login \
+curl -X POST http://localhost:5001/api/auth/admin/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "mwambutsadaryce@gmail.com",
@@ -68,7 +68,7 @@ curl -X POST http://localhost:5000/api/auth/admin/login \
 ### 4. User Authentication
 ```bash
 # Register new user
-curl -X POST http://localhost:5000/api/users/register \
+curl -X POST http://localhost:5001/api/users/register \
   -H "Content-Type: application/json" \
   -d '{
     "fullName": "John Doe",
@@ -77,7 +77,7 @@ curl -X POST http://localhost:5000/api/users/register \
   }'
 
 # Login user
-curl -X POST http://localhost:5000/api/users/login \
+curl -X POST http://localhost:5001/api/users/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john@example.com",
@@ -88,7 +88,7 @@ curl -X POST http://localhost:5000/api/users/login \
 ### 5. Using JWT Tokens
 ```bash
 # Use token in Authorization header
-curl -X GET http://localhost:5000/api/users/me \
+curl -X GET http://localhost:5001/api/users/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
